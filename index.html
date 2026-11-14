@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remi Card Game - Interactive Prototype</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 540px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+        }
+        h2 {
+            margin-top: 0;
+            color: #4caf50;
+            text-align: center;
+            font-size: 22px;
+        }
+        .hidden { display: none; }
+
+        /* Form Setup */
+        .setup-section label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .setup-section select, .setup-section input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 14px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background: #2c2c2c;
+            color: white;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-primary { background-color: #4caf50; color: white; margin-top: 8px; }
+        .btn-primary:hover { background-color: #43a047; }
+        .btn-danger { background-color: #d32f2f; color: white; margin-top: 10px; }
+
+        /* Arena Game Layout */
+        .game-board {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .board-section {
+            background: #262626;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+        .board-section h3 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-height: 45px;
+            align-items: center;
+        }
+        /* Style Kartu Sementara */
+        .card-item {
+            background: #333;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .card-item:hover { background: #444; }
+        
+        .player-hand {
+            background: #2c2c2c;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🃏 Remi Arena</h2>
+
+    <!-- TAHAP 1: MENU SETUP AWAL -->
+    <div id="setupScreen" class="setup-section">
+        <label>Pilih Jumlah Pemain:</label>
+        <select id="playerCountSelect" onchange="generatePlayerInputs()">
+            <option value="3">3 Pemain</option>
+            <option value="4" selected>4 Pemain</option>
+        </select>
+
+        <div id="dynamicInputs">
+            <!-- Input nama akan dimunculkan otomatis via JavaScript -->
+        </div>
+
+        <button class="btn-primary" onclick="mulaiPermainan()">Mulai Game 🚀</button>
+    </div>
+
+    <!-- TAHAP 2: ARENA PERMAINAN UTAMA -->
+    <div id="gameScreen" class="hidden">
+        <div class="game-board">
+            <!-- Informasi Giliran & Status -->
+            <div class="board-section">
+                <h3 id="turnInfo">Giliran: Pemain 1</h3>
+                <p id="gameStatus" style="font-size: 13px; color: #4caf50; margin: 0;">Status: Menunggu giliran ambil kartu</p>
+            </div>
+
+            <!-- Papan Permainan (Tengah Meja) -->
+            <div class="board-section">
+                <h3>Papan Meja (Batas maksimal kartu: <span id="maxBoardLimit">7</span>)</h3>
+                <div id="boardCardsArea" class="card-container">
+                    <span style="color: #666; font-size: 13px;">Belum ada kartu di papan</span>
+                </div>
+            </div>
+
+            <!-- Tangan Pemain Aktif -->
+            <div class="player-hand">
+                <h3 id="activePlayerName">Kartu di Tanganmu</h3>
+                <div id="playerHandArea" class="card-container">
+                    <!-- Kartu pemain akan muncul di sini -->
+                </div>
+            </div>
+
+            <!-- Tombol Interaksi Aksi Pemain -->
+            <div class="action-buttons">
+                <button class="btn-primary" onclick="aksiAmbilKartu()">Ambil Kartu Tengah</button>
+                <button class="btn-warning" style="background:#ff9800; color:#121212;" onclick="aksiBuangKartu()">Buang Kartu</button>
+            </div>
+        </div>
+
+        <button class="btn-danger" onclick="resetKeMenu()">Keluar / Reset Game</button>
+    </div>
+</div>
+
+<script>
+    // --- SKRIP INTERAKSI TOMBOL DASAR ---
+
+    // Jalankan saat halaman pertama kali dimuat untuk membuat input nama default
+    window.onload = function() {
+        generatePlayerInputs();
+    };
+
+    // Fungsi dinamis untuk membuat kolom input nama berdasarkan pilihan dropdown
+    function generatePlayerInputs() {
+        const count = document.getElementById('playerCountSelect').value;
+        const container = document.getElementById('dynamicInputs');
+        container.innerHTML = '';
+
+        for (let i = 1; i <= count; i++) {
+            container.innerHTML += `
+                <input type="text" id="setup_p${i}" placeholder="Nama Pemain ${i}" value="Pemain ${i}">
+            `;
+        }
+    }
+
+    // Tombol: Mulai Permainan (Pindah dari Layar Setup ke Layar Game)
+    function mulaiPermainan() {
+        const count = document.getElementById('playerCountSelect').value;
+        let names = [];
+        
+        for (let i = 1; i <= count; i++) {
+            let nameVal = document.getElementById(`setup_p${i}`).value.trim();
+            if(!nameVal) nameVal = `Pemain ${i}`;
+            names.push(nameVal);
+        }
+
+        // Sembunyikan setup, tampilkan layar game
+        document.getElementById('setupScreen').classList.add('hidden');
+        document.getElementById('gameScreen').classList.remove('hidden');
+
+        // Atur batas papan sesuai jumlah pemain
+        const limit = (count == 3) ? 5 : 7;
+        document.getElementById('maxBoardLimit').innerText = limit;
+
+        alert(`Game dimulai dengan ${count} pemain: ${names.join(', ')}! (Tombol interaksi dasar siap)`);
+    }
+
+    // Tombol: Ambil Kartu (Interaksi dasar)
+    function aksiAmbilKartu() {
+        alert("Tombol Ambil Kartu ditekan! (Logika pengambilan kartu akan kita isi nanti).");
+    }
+
+    // Tombol: Buang Kartu (Interaksi dasar)
+    function aksiBuangKartu() {
+        alert("Tombol Buang Kartu ditekan! (Logika pembuangan ke papan akan kita isi nanti).");
+    }
+
+    // Tombol: Kembali ke Menu Setup
+    function resetKeMenu() {
+        if(confirm("Keluar dari permainan saat ini?")) {
+            document.getElementById('gameScreen').classList.add('hidden');
+            document.getElementById('setupScreen').classList.remove('hidden');
+        }
+    }
+</script>
+
+</body>
+</html>
