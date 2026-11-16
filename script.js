@@ -4,7 +4,8 @@ let gameState = {
     deck: [],
     boardCards: [],
     playerCount: 4,
-    hasDrawn: false // Pelacak: Apakah pemain sudah mengambil kartu di ronde ini?
+    hasDrawn: false,          // Pelacak: Apakah pemain sudah ambil kartu?
+    selectedCardIndex: null   // Pelacak: Indeks kartu di tangan yang dipilih untuk dibuang
 };
 
 const suits = ['Hati ♥', 'Wajik ♦', 'Sekop ♠', 'Keriting ♣'];
@@ -56,6 +57,7 @@ function mulaiPermainan() {
     gameState.boardCards = [];
     gameState.currentTurn = 0;
     gameState.hasDrawn = false;
+    gameState.selectedCardIndex = null;
 
     const cardsPerPlayer = (count === 3) ? 10 : 7;
     gameState.players.forEach(player => {
@@ -80,15 +82,16 @@ function updateTampilanGame() {
         statusEl.innerText = "Status: Wajib ambil kartu dari deck atau papan dulu!";
         statusEl.style.color = "#ff9800";
     } else {
-        statusEl.innerText = "Status: Silakan buang kartu ke papan untuk mengakhiri giliran.";
+        statusEl.innerText = "Status: Pilih kartu di tangan, lalu buang ke papan.";
         statusEl.style.color = "#4caf50";
     }
 
-    // Render Tangan
+    // Render Tangan dengan dukungan pemilihan kartu (selected)
     const handArea = document.getElementById('playerHandArea');
     handArea.innerHTML = '';
     activePlayer.hand.forEach((card, index) => {
-        handArea.innerHTML += `<div class="card-item" onclick="pilihKartuTangan(${index})">${card.name}</div>`;
+        let isSelected = (gameState.selectedCardIndex === index) ? ' selected' : '';
+        handArea.innerHTML += `<div class="card-item${isSelected}" onclick="pilihKartuTangan(${index})">${card.name}</div>`;
     });
 
     // Render Papan
@@ -103,11 +106,18 @@ function updateTampilanGame() {
     }
 }
 
+// Fungsi saat pemain mengetuk kartu di tangannya sendiri
 function pilihKartuTangan(index) {
-    const activePlayer = gameState.players[gameState.currentTurn];
-    alert(`Kamu memilih kartu di tangan: ${activePlayer.hand[index].name}`);
+    // Jika diklik dua kali pada kartu yang sama, batalkan pilihan
+    if (gameState.selectedCardIndex === index) {
+        gameState.selectedCardIndex = null;
+    } else {
+        gameState.selectedCardIndex = index;
+    }
+    updateTampilanGame();
 }
 
+// Aksi 1: Ambil dari Deck
 function aksiAmbilDariDeck() {
     if (gameState.hasDrawn) {
         alert("Kamu sudah mengambil kartu pada giliran ini!");
@@ -119,35 +129,44 @@ function aksiAmbilDariDeck() {
         gameState.players[gameState.currentTurn].hand.push(drawn);
         gameState.hasDrawn = true;
         updateTampilanGame();
-        alert(`Berhasil mengambil kartu dari deck: ${drawn.name}`);
+        alert(`Berhasil mengambil kartu: ${drawn.name}`);
     } else {
         alert("Deck sudah habis!");
     }
 }
 
+// Aksi 2: Buang Kartu Terpilih ke Papan
 function aksiBuangKePapan() {
     if (!gameState.hasDrawn) {
         alert("⚠️ Eits! Kamu harus AMBIL KARTU terlebih dahulu sebelum bisa membuang kartu!");
         return;
     }
 
-    const activePlayer = gameState.players[gameState.currentTurn];
-    if (activePlayer.hand.length === 0) return;
+    if (gameState.selectedCardIndex === null) {
+        alert("⚠️ Silakan sentuh / pilih salah satu kartu di tanganmu terlebih dahulu yang ingin dibuang!");
+        return;
+    }
 
-    let discarded = activePlayer.hand.shift();
-    const maxLimit = (gameState.playerCount === 3) ? 5 : 7;
+    const activePlayer = gameState.players[gameState.currentTurn];
     
+    // Ambil kartu persis sesuai indeks yang dipilih pemain
+    let discarded = activePlayer.hand.splice(gameState.selectedCardIndex, 1)[0];
+    
+    const maxLimit = (gameState.playerCount === 3) ? 5 : 7;
     if (gameState.boardCards.length >= maxLimit) {
-        gameState.boardCards.shift();
+        gameState.boardCards.shift(); // Buang kartu terlama di papan
     }
     gameState.boardCards.push(discarded);
 
-    gameState.hasDrawn = false; 
+    // Reset status untuk giliran pemain berikutnya
+    gameState.hasDrawn = false;
+    gameState.selectedCardIndex = null;
     gameState.currentTurn = (gameState.currentTurn + 1) % gameState.playerCount;
     
     updateTampilanGame();
 }
 
+// Aksi 3: Ambil Kartu dari Papan
 function cobaAmbilKartuPapan(boardIndex) {
     if (gameState.hasDrawn) {
         alert("Kamu sudah mengambil kartu pada giliran ini!");
