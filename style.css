@@ -86,17 +86,24 @@ button:active { transform: scale(0.97); }
     min-height: 45px;
     align-items: center;
 }
-/* Style Kartu Sementara */
 .card-item {
     background: #333;
     border: 1px solid #555;
-    padding: 6px 10px;
+    padding: 8px 10px;
     border-radius: 6px;
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
 }
 .card-item:hover { background: #444; }
+
+/* Style khusus untuk kartu yang sedang dipilih pemain */
+.card-item.selected {
+    background: #4caf50;
+    color: white;
+    border-color: #69f0ae;
+    transform: translateY(-4px);
+}
 
 .player-hand {
     background: #2c2c2c;
