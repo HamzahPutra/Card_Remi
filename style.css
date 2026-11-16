@@ -94,15 +94,17 @@ button:active { transform: scale(0.97); }
     font-size: 14px;
     font-weight: bold;
     cursor: pointer;
+    transition: all 0.15s ease; /* Animasi halus saat dipilih */
 }
 .card-item:hover { background: #444; }
 
 /* Style khusus untuk kartu yang sedang dipilih pemain */
 .card-item.selected {
-    background: #4caf50;
-    color: white;
-    border-color: #69f0ae;
-    transform: translateY(-4px);
+    background: #ff9800 !important; /* Warna Oranye Terang */
+    color: #121212 !important;     /* Teks Gelap agar mudah dibaca */
+    border: 2px solid #ffffff !important; /* Garis tepi putih */
+    box-shadow: 0 0 12px #ff9800;  /* Efek cahaya/glow */
+    transform: translateY(-10px) scale(1.1); /* Naik dan membesar */
 }
 
 .player-hand {
